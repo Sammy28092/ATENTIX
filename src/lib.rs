@@ -1,135 +1,51 @@
 use anchor_lang::prelude::*;
 
-// Recuerda que este ID se actualiza solo en SolPG al hacer "Build"
-declare_id!("Amdp8Vzn8aQRt6aGqWFtokBK5Lw9EViGdHaLTFTC4VXE");
+// Nota: Cuando compiles, Anchor cambiará este ID automáticamente.
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"); 
 
 #[program]
-pub mod lista_tareas {
+pub mod adhd_learning_platform {
     use super::*;
 
-    // 1. CREATE: Crear lista
-    pub fn crear_lista(ctx: Context<NuevaLista>, nombre_lista: String) -> Result<()> {
-        let owner = ctx.accounts.owner.key();
-        let tareas: Vec<Tarea> = Vec::new();
-
-        ctx.accounts.lista.set_inner(ListaTareas {
-            owner,
-            nombre: nombre_lista.clone(), 
-            tareas,
-        });
-
-        msg!("¡Lista de tareas '{}' creada con éxito!", nombre_lista);
+    // Función 1: Crea el perfil del jugador en la blockchain
+    pub fn initialize_user(ctx: Context<InitializeUser>) -> Result<()> {
+        let user_profile = &mut ctx.accounts.user_profile;
+        user_profile.authority = ctx.accounts.authority.key();
+        user_profile.total_score = 0;
+        user_profile.games_played = 0;
         Ok(())
     }
 
-    // 2. CREATE: Agregar tarea con validación de límite
-    pub fn agregar_tarea(ctx: Context<GestionTareas>, descripcion: String, prioridad: u8) -> Result<()> {
-        // MEJORA: Validamos que no se exceda el límite de 15 tareas definido en el espacio
-        require!(ctx.accounts.lista.tareas.len() < 15, Errores::ListaLlena);
-
-        let tarea = Tarea {
-            descripcion: descripcion.clone(), 
-            prioridad,
-            completada: false,
-        };
-
-        ctx.accounts.lista.tareas.push(tarea);
-        msg!("Tarea agregada: {}", descripcion);
+    // Función 2: Suma puntos cuando el usuario termina una actividad de atención
+    pub fn add_score(ctx: Context<AddScore>, points: u32) -> Result<()> {
+        let user_profile = &mut ctx.accounts.user_profile;
+        user_profile.total_score += points;
+        user_profile.games_played += 1;
         Ok(())
     }
-
-    // 3. READ: Ver tareas en logs
-    pub fn ver_tareas(ctx: Context<GestionTareas>) -> Result<()> {
-        msg!("Lista: {}", ctx.accounts.lista.nombre);
-        for tarea in &ctx.accounts.lista.tareas {
-            let estado = if tarea.completada { "Completada" } else { "Pendiente" };
-            msg!("Tarea: {} | Prioridad: {} | Estado: {}", tarea.descripcion, tarea.prioridad, estado);
-        }
-        Ok(())
-    }
-
-    // 4. UPDATE: Marcar tarea como completada o cambiar prioridad
-    pub fn actualizar_tarea(ctx: Context<GestionTareas>, descripcion: String, nueva_prioridad: u8, completada: bool) -> Result<()> {
-        let tareas = &mut ctx.accounts.lista.tareas;
-        
-        for t in tareas.iter_mut() {
-            if t.descripcion == descripcion {
-                t.prioridad = nueva_prioridad;
-                t.completada = completada;
-                msg!("Tarea '{}' actualizada.", descripcion);
-                return Ok(());
-            }
-        }
-        Err(Errores::TareaNoEncontrada.into())
-    }
-
-    // 5. DELETE: Eliminar una tarea
-    pub fn eliminar_tarea(ctx: Context<GestionTareas>, descripcion: String) -> Result<()> {
-        let tareas = &mut ctx.accounts.lista.tareas;
-        let index = tareas.iter().position(|t| t.descripcion == descripcion);
-
-        if let Some(i) = index {
-            tareas.remove(i);
-            msg!("Tarea '{}' eliminada.", descripcion);
-            Ok(())
-        } else {
-            Err(Errores::TareaNoEncontrada.into())
-        }
-    }
 }
 
-#[error_code]
-pub enum Errores {
-    #[msg("La tarea solicitada no existe en la lista.")]
-    TareaNoEncontrada,
-    #[msg("La lista está llena. Has alcanzado el límite de 15 tareas.")] // NUEVO ERROR
-    ListaLlena,
-}
-
-#[account]
-#[derive(InitSpace)]
-pub struct ListaTareas {
-    pub owner: Pubkey,
-    #[max_len(40)]
-    pub nombre: String,
-    #[max_len(15)] // Capacidad fija para 15 tareas
-    pub tareas: Vec<Tarea>,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace, PartialEq, Debug)]
-pub struct Tarea {
-    #[max_len(50)]
-    pub descripcion: String,
-    pub prioridad: u8,
-    pub completada: bool,
-}
-
+// Estructuras que definen qué datos se guardan y quién paga por el espacio
 #[derive(Accounts)]
-pub struct NuevaLista<'info> {
+pub struct InitializeUser<'info> {
+    #[account(init, payer = authority, space = 8 + 32 + 4 + 4)]
+    pub user_profile: Account<'info, UserProfile>,
     #[account(mut)]
-    pub owner: Signer<'info>,
-
-    #[account(
-        init,
-        payer = owner,
-        space = ListaTareas::INIT_SPACE + 8,
-        seeds = [b"lista_tareas", owner.key().as_ref()],
-        bump
-    )]
-    pub lista: Account<'info, ListaTareas>,
-
+    pub authority: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
-pub struct GestionTareas<'info> {
-    pub owner: Signer<'info>,
+pub struct AddScore<'info> {
+    #[account(mut, has_one = authority)]
+    pub user_profile: Account<'info, UserProfile>,
+    pub authority: Signer<'info>,
+}
 
-    #[account(
-        mut,
-        seeds = [b"lista_tareas", owner.key().as_ref()],
-        bump,
-        has_one = owner
-    )]
-    pub lista: Account<'info, ListaTareas>,
+// La "plantilla" de los datos del usuario
+#[account]
+pub struct UserProfile {
+    pub authority: Pubkey,
+    pub total_score: u32,
+    pub games_played: u32,
 }
