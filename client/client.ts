@@ -1,87 +1,39 @@
-async function runToDoList() {
-  console.log("🚀 Iniciando Lista de Tareas CRUD completo...");
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+// Asegúrate de que el nombre coincida con tu proyecto
+import { AdhdLearningPlatform } from "../target/types/adhd_learning_platform"; 
 
-  // 1. Derivar la dirección de la PDA
-  const [listaPDA] = await anchor.web3.PublicKey.findProgramAddress(
-    [Buffer.from("lista_tareas"), pg.wallet.publicKey.toBuffer()],
-    pg.program.programId
-  );
+describe("adhd_learning_platform", () => {
+  // Configura la conexión a tu entorno local de Solana
+  anchor.setProvider(anchor.AnchorProvider.env());
+  const program = anchor.workspace.AdhdLearningPlatform as Program<AdhdLearningPlatform>;
+  const provider = anchor.getProvider();
+  
+  // Generamos un usuario "falso" para hacer la prueba
+  const userProfile = anchor.web3.Keypair.generate();
 
-  try {
-    // 2. CREAR LISTA
-    const cuentaExistente = await pg.connection.getAccountInfo(listaPDA);
-    if (!cuentaExistente) {
-      console.log("📝 Creando nueva lista...");
-      await pg.program.methods
-        .crearLista("Tareas de Johnny")
-        .accounts({
-          owner: pg.wallet.publicKey,
-          lista: listaPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .rpc();
-    } else {
-      console.log("✅ La lista ya existe, continuando...");
-    }
-
-    // 3. AGREGAR TAREA (CREATE)
-    console.log("➕ Agregando tarea: 'Estudiar Solana'...");
-    await pg.program.methods
-      .agregarTarea("Estudiar Solana", 5) // descripcion, prioridad
+  it("¡Inicializa el perfil del usuario con TDAH!", async () => {
+    await program.methods.initializeUser()
       .accounts({
-        owner: pg.wallet.publicKey,
-        lista: listaPDA,
+        userProfile: userProfile.publicKey,
+        authority: provider.wallet.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([userProfile])
+      .rpc();
+    
+    console.log("✅ Perfil creado exitosamente en la blockchain.");
+  });
+
+  it("¡Suma puntos después de un juego de seguimiento de instrucciones!", async () => {
+    // Simulamos que el usuario ganó 50 puntos
+    await program.methods.addScore(50)
+      .accounts({
+        userProfile: userProfile.publicKey,
+        authority: provider.wallet.publicKey,
       })
       .rpc();
-
-    // 4. VER TAREAS (READ)
-    let datos = await pg.program.account.listaTareas.fetch(listaPDA);
-    console.log("\n--- TAREAS (Después de agregar) ---");
-    datos.tareas.forEach((t, i) => {
-      console.log(`${i + 1}. ${t.descripcion} | Prioridad: ${t.prioridad} | Hecho: ${t.completada}`);
-    });
-
-    // 5. ACTUALIZAR TAREA (UPDATE)
-    console.log("\n✏️ Actualizando tarea 'Estudiar Solana' (Prioridad 10, Completada: true)...");
-    await pg.program.methods
-      .actualizarTarea("Estudiar Solana", 10, true)
-      .accounts({
-        owner: pg.wallet.publicKey,
-        lista: listaPDA,
-      })
-      .rpc();
-
-    // Ver tareas después de actualizar
-    datos = await pg.program.account.listaTareas.fetch(listaPDA);
-    console.log("--- TAREAS (Después de actualizar) ---");
-    datos.tareas.forEach((t, i) => {
-      console.log(`${i + 1}. ${t.descripcion} | Prioridad: ${t.prioridad} | Hecho: ${t.completada}`);
-    });
-
-    // 6. ELIMINAR TAREA (DELETE)
-    console.log("\n🗑️ Eliminando tarea 'Estudiar Solana'...");
-    await pg.program.methods
-      .eliminarTarea("Estudiar Solana")
-      .accounts({
-        owner: pg.wallet.publicKey,
-        lista: listaPDA,
-      })
-      .rpc();
-
-    // Ver tareas finales
-    datos = await pg.program.account.listaTareas.fetch(listaPDA);
-    console.log("--- TAREAS (Después de eliminar) ---");
-    if (datos.tareas.length === 0) {
-       console.log("La lista está vacía.");
-    } else {
-       datos.tareas.forEach((t, i) => {
-         console.log(`${i + 1}. ${t.descripcion} | Prioridad: ${t.prioridad} | Hecho: ${t.completada}`);
-       });
-    }
-
-  } catch (error) {
-    console.error("❌ Error:", error);
-  }
-}
-
-runToDoList();
+      
+    console.log("✅ ¡50 puntos añadidos a la cuenta del usuario!");
+  });
+});
