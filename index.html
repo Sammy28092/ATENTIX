@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>ATENTIX - Prototipo MVP</title>
+
+<style>
+/* CSS PROFESIONALIZADO PARA TDAH Y WEB3 */
+:root {
+  --bg-color: #f0f2f5;
+  --sidebar-color: #1a1a2e; /* El azul oscuro del mockup */
+  --sidebar-text: #b0b0c0;
+  --main-text: #333;
+  --solana-purple: #6c5ce7;
+  --card-shadow: 0 8px 15px rgba(0,0,0,0.06);
+  --success-green: #00c853;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg-color);
+  display: flex;
+  height: 100vh;
+  color: var(--main-text);
+  overflow: hidden; /* Mantiene la estructura SPA */
+}
+
+/* SIDEBAR REFINADO */
+.sidebar {
+  width: 250px;
+  background: var(--sidebar-color);
+  color: white;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+}
+
+.sidebar h2 {
+  text-align: center;
+  letter-spacing: 2px;
+  color: #fff;
+  margin-bottom: 30px;
+  font-size: 24px;
+}
+
+.sidebar button {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 12px;
+  background: #2a2a40;
+  color: var(--sidebar-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 15px;
+}
+
+.sidebar button:hover {
+  background: #3a3a55;
+  color: white;
+  transform: translateX(5px);
+}
+
+.wallet {
+  background: var(--solana-purple) !important;
+  color: white !important;
+  margin-bottom: 20px !important;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+}
+
+.status {
+  margin-top: auto; /* Empuja hacia abajo */
+  font-size: 14px;
+  background: rgba(255,255,255,0.05);
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  color: #888;
+}
+
+/* MAIN CONTENT ÁREA LIMPIA */
+.main {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+h1 { margin-top: 0; color: #1a1a2e; }
+
+/* SECCIÓN DE CARTAS REFINADA */
+.cards {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 30px 0;
+}
+
+.card {
+  width: 170px;
+  background: white;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  text-align: center;
+  font-weight: bold;
+  border-bottom: 4px solid #ddd;
+  transition: all 0.3s ease;
+  color: #444;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-bottom-color: var(--solana-purple);
+}
+
+/* ÁREA DE JUEGO (GAME) MEJORADA */
+.game {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: var(--card-shadow);
+  text-align: center;
+  margin-bottom: 30px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  animation: fade 0.5s ease;
+}
+
+@keyframes fade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Botones genéricos de juego */
+.btn-game {
+  padding: 10px 20px;
+  margin: 5px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #e0e0e0;
+  transition: 0.2s;
+  font-family: inherit;
+}
+.btn-game:hover { background: #d0d0d0; }
+
+/* REACCIÓN - Botón suave */
+#reactionBox {
+  width: 120px;
+  height: 120px;
+  margin: 20px auto;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: 0.2s;
+  background: #eee; /* Estado inicial */
+}
+
+/* BOTÓN DE GUARDAR ESTILO PITCH */
+.btn-save {
+  background: var(--success-green);
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 20px;
+  box-shadow: 0 4px 14px rgba(0,200,83,0.3);
+  font-size: 16px;
+  font-family: inherit;
+  transition: 0.3s;
+}
+.btn-save:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 20px rgba(0,200,83,0.4);
+}
+
+/* Status de transacción */
+#txStatus {
+  font-size: 14px;
+  margin-top: 15px;
+  color: #666;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+  <h2>ATENTIX</h2>
+  <button class="wallet" onclick="connectWallet()">🔗 Conectar Wallet</button>
+  <button>Dashboard</button>
+  <button>Juegos</button>
+  <button>Progreso</button>
+  <p class="status" id="walletStatus">Wallet: No conectada</p>
+</div>
+
+<div class="main">
+  <h1>Centro de Actividades</h1>
+  <h3>Puntaje: <span id="score">0</span></h3>
+
+  <div class="cards">
+    <div class="card" onclick="reactionGame()">⚡ Reacción</div>
+    <div class="card" onclick="memoryGame()">🧠 Memoria</div>
+    <div class="card" onclick="clickGame()">🎯 Velocidad</div>
+    <div class="card" onclick="sequenceGame()">🔢 Secuencia</div>
+  </div>
+
+  <div id="gameArea" class="game">
+    <p style="color: #888;">Selecciona un juego didáctico para empezar</p>
+  </div>
+
+  <button class="btn-save" onclick="guardarEnSolana()">💾 Guardar en Solana (Vault)</button>
+  <p class="status" id="txStatus"></p>
+</div>
+
+<script>
+// LÓGICA INTACTA, SOLO REFINADA
+
+let score = 0;
+let walletConnected = false;
+let vaultBalance = 0; // NUEVO: Simulación de Bóveda On-Chain
+
+function updateScore(p) {
+  score += p;
+  document.getElementById("score").textContent = score;
+}
+
+//////////////// WALLET
+function connectWallet() {
+  document.getElementById("walletStatus").innerHTML = "⏳ Conectando con Phantom...";
+  
+  setTimeout(() => {
+    walletConnected = true;
+    document.getElementById("walletStatus").innerHTML = "Wallet conectada ✅<br><span style='font-size:11px;color:#aaa;'>Balance: 1.25 SOL (Simulado)</span>";
+  }, 1800);
+}
+
+//////////////// REACCIÓN - Colores suavizados
+function reactionGame() {
+  let area = document.getElementById("gameArea");
+  area.innerHTML = "<h2>Reacción (Enfoque)</h2><p style='font-size:14px;color:#666;'>Haz clic cuando cambie de suave <span style='color:#ff8a80'>Rojo</span> a <span style='color:#66bb6a'>Verde</span> pastel.</p><div id='reactionBox'></div>";
+
+  let box = document.getElementById("reactionBox");
+  let waiting = true;
+
+  function start() {
+    box.style.background = "#ff8a80"; // Pastel Red
+    waiting = true;
+
+    // Feedback visual suave de espera
+    box.style.border = "4px dashed rgba(0,0,0,0.1)";
+
+    setTimeout(() => {
+      box.style.background = "#66bb6a"; // Pastel Green
+      box.style.border = "4px solid var(--success-green)";
+      waiting = false;
+    }, Math.random() * 2000 + 1000);
+  }
+
+  box.onclick = () => {
+    if (!waiting) {
+      updateScore(10);
+      start();
+    } else {
+        alert("¡Muy pronto! Mantén la calma 😅");
+        start(); // Reinicia
+    }
+  };
+
+  start();
+}
+
+//////////////// MEMORIA - Estilo refinado
+function memoryGame() {
+  let area = document.getElementById("gameArea");
+  let values = ["A", "A", "B", "B", "C", "C", "D", "D"];
+  values.sort(() => Math.random() - 0.5);
+
+  area.innerHTML = "<h2>Memoria (Orden)</h2>";
+
+  let first = null, second = null;
+
+  values.forEach(val => {
+    let card = document.createElement("div");
+    card.textContent = "?";
+    // Mismo estilo estructural, colores suavizados
+    card.style.cssText = "display:inline-block;width:60px;height:60px;margin:5px;background:#f5eeda;border-radius:10px;line-height:60px;cursor:pointer;font-weight:bold;color:var(--solana-purple);font-size:20px;box-shadow:0 3px 6px rgba(0,0,0,0.05);transition:0.2s;";
+
+    card.onclick = () => {
+      if (card.textContent !== "?" || second) return;
+      card.textContent = val;
+      card.style.background = "white"; // "Dada la vuelta"
+      card.style.border = "1px solid var(--solana-purple)";
+
+      if (!first) { first = card; }
+      else {
+        second = card;
+        if (first.textContent === second.textContent) {
+          updateScore(15);
+          first = null; second = null;
+          card.style.background = "#a5d6a7"; // Match visual feedback (pastel green)
+          card.style.border = "none";
+        } else {
+          setTimeout(() => {
+            first.textContent = "?";
+            first.style.background = "#f5eeda"; first.style.border = "none";
+            second.textContent = "?";
+            second.style.background = "#f5eeda"; second.style.border = "none";
+            first = null; second = null;
+          }, 700);
+        }
+      }
+    };
+
+    area.appendChild(card);
+  });
+}
+
+//////////////// CLICK (Velocidad) - Botón con clase btn-game
+function clickGame() {
+  let area = document.getElementById("gameArea");
+  let time = 5;
+  let clicks = 0;
+
+  area.innerHTML = `
+    <h2>Velocidad (Precisión)</h2>
+    <p style="font-size:14px;color:#666;">Haz clic tantas veces como puedas en <span id="time" style="font-weight:bold;color:var(--solana-purple)">${time}</span> seg.</p>
+    <button id="clickBtn" class="btn-game" style="font-weight:bold;color:white;background:var(--solana-purple);padding:15px;margin:15px">¡CLICK RÁPIDO!</button>
+  `;
+
+  document.getElementById("clickBtn").onclick = () => clicks++;
+
+  let interval = setInterval(() => {
+    time--;
+    document.getElementById("time").textContent = time;
+
+    if (time <= 0) {
+      clearInterval(interval);
+      updateScore(clicks);
+      area.innerHTML = `<h2>Sesión Completada</h2><p>Puntaje ganado: <b>${clicks} XP</b></p><p style="font-size:14px;color:#888;">Selecciona otra actividad.</p>`;
+    }
+  }, 1000);
+}
+
+//////////////// SECUENCIA - Botones con clase btn-game
+function sequenceGame() {
+  let area = document.getElementById("gameArea");
+  let seq = [1, 2, 3, 4].sort(() => Math.random() - 0.5);
+  let index = 0;
+
+  area.innerHTML = "<h2>Secuencia (Lógica)</h2><p style='font-size:14px;color:#666;'>Haz clic en orden numérico 1 → 4</p>";
+
+  seq.forEach(num => {
+    let btn = document.createElement("button");
+    btn.textContent = num;
+    btn.className = "btn-game"; // Asigna clase genérica
+    btn.style.margin = "10px"; btn.style.padding = "15px"; btn.style.fontSize = "18px"; btn.style.fontWeight = "bold";
+
+    btn.onclick = () => {
+      if (num === index + 1) {
+        index++;
+        updateScore(5);
+        btn.style.background = "var(--success-green)"; btn.style.color = "white"; // Feedback positivo
+        btn.disabled = true;
+
+        if (index === 4) {
+             alert("¡Correcto! XP añadidos.");
+             index=0; // Reinicia
+             sequenceGame(); // Vuelve a generar
+        }
+      } else {
+        alert("Error 😅 Reiniciando secuencia...");
+        index = 0;
+        sequenceGame(); // Reinicia el juego
+      }
+    };
+
+    area.appendChild(btn);
+  });
+}
+
+//////////////// SOLANA SIMULADO PRO
+async function guardarEnSolana() {
+  let status = document.getElementById("txStatus");
+
+  if (!walletConnected) {
+    alert("Conecta tu wallet primero para guardar el progreso ⚠️");
+    return;
+  }
+
+  try {
+    status.innerHTML = "⏳ Firmando transacción con la Wallet... (Llamando a 'addScore' en Solana)";
+    
+    // Simulación de latencia de red real
+    await new Promise(r => setTimeout(r, 1900));
+
+    // LÓGICA DE BÓVEDA SIMULADA (Para impresionar)
+    vaultBalance += (score / 100); // 100 XP = 1 SOL (Simulado)
+    status.innerHTML = `✅ <b>Éxito:</b> Puntaje guardado.<br>Simulated Hash: 5zG1...x9p3 <br><b>Balance en Bóveda: ${vaultBalance.toFixed(3)} SOL (Simulado)</b>`;
+    
+    // Resetear puntaje local después de guardar
+    score = 0;
+    document.getElementById("score").textContent = score;
+
+  } catch (e) {
+    status.innerHTML = "❌ Error en transacción";
+  }
+}
+
+</script>
+
+</body>
+</html>
